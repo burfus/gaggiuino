@@ -28,6 +28,9 @@ void lcdUploadCfg(eepromValues_t &eepromCurrentValues) {
   myNex.writeNum("setPoint", eepromCurrentValues.setpoint);
   myNex.writeNum("moreTemp.n1.val", eepromCurrentValues.setpoint-eepromCurrentValues.offsetTemp);
 
+  myNex.writeNum("steamSetPoint", eepromCurrentValues.steamSetPoint);
+  myNex.writeNum("moreTemp.n6.val", eepromCurrentValues.steamSetPoint-eepromCurrentValues.offsetTemp);
+
   myNex.writeNum("offSet", eepromCurrentValues.offsetTemp);
   myNex.writeNum("moreTemp.n2.val", eepromCurrentValues.offsetTemp);
 
@@ -113,8 +116,8 @@ void lcdUploadCfg(eepromValues_t &eepromCurrentValues) {
   myNex.writeNum("homeOnBrewFinish", eepromCurrentValues.homeOnShotFinish);
   myNex.writeNum("brewSettings.btGoHome.val", eepromCurrentValues.homeOnShotFinish);
 
-  myNex.writeNum("graphEnabled", eepromCurrentValues.graphBrew);
-  myNex.writeNum("brewSettings.btGraph.val", eepromCurrentValues.graphBrew);
+  myNex.writeNum("basketPrefill", eepromCurrentValues.basketPrefill);
+  myNex.writeNum("brewSettings.btPrefill.val", eepromCurrentValues.basketPrefill);
 
   myNex.writeNum("warmupState", eepromCurrentValues.warmupState);
   myNex.writeNum("brewSettings.btWarmup.val", eepromCurrentValues.warmupState);
@@ -163,6 +166,7 @@ eepromValues_t lcdDownloadCfg(void) {
   lcdCfg.shotPreset                     = myNex.readNumber("shotPreset");
 
   lcdCfg.setpoint                       = myNex.readNumber("setPoint");
+  lcdCfg.steamSetPoint                  = myNex.readNumber("steamSetPoint");
   lcdCfg.offsetTemp                     = myNex.readNumber("offSet");
   lcdCfg.hpwr                           = myNex.readNumber("hpwr");
   lcdCfg.mainDivider                    = myNex.readNumber("mDiv");
@@ -171,7 +175,7 @@ eepromValues_t lcdDownloadCfg(void) {
   lcdCfg.warmupState                    = myNex.readNumber("warmupState");
 
   lcdCfg.homeOnShotFinish               = myNex.readNumber("homeOnBrewFinish");
-  lcdCfg.graphBrew                      = myNex.readNumber("graphEnabled");
+  lcdCfg.basketPrefill                  = myNex.readNumber("basketPrefill");
   lcdCfg.lcdSleep                       = myNex.readNumber("systemSleepTime") / 60;
   lcdCfg.brewDeltaState                 = myNex.readNumber("deltaState");
   lcdCfg.switchPhaseOnThreshold         = myNex.readNumber("switchPhaseOnThreshold");
@@ -207,6 +211,10 @@ void lcdSetPressure(float val) {
   myNex.writeNum("pressure.val", val);
 }
 
+void lcdSetUpTime(float val) {
+  myNex.writeNum("systemUpTime", val);
+}
+
 void lcdSetTemperature(int val) {
   myNex.writeNum("currentTemp", val);
 }
@@ -237,6 +245,10 @@ void lcdShowPopup(const char *msg) {
 
 void lcdShowDescaleFinished(void) {
   myNex.writeStr("t14.txt", "FINISHED!");
+}
+
+void lcdTargetState(int val) {
+  myNex.writeNum("targetState", val);
 }
 
 void lcdBrewTimerStart(void) {

@@ -3,7 +3,7 @@
 
 #include "../peripherals/pump.h"
 #include "../lcd/lcd.h"
-#include "../eeprom_data.h"
+#include "../eeprom_data/eeprom_data.h"
 #include "../sensors_state.h"
 #include "just_do_coffee.h"
 #include <Arduino.h>
@@ -18,5 +18,8 @@
 
 void deScale(eepromValues_t &runningCfg, SensorState &currentState);
 void solenoidBeat(void);
-
+void backFlush(void);
+void flushActivated(void);
+void flushDeactivated(void);
+void flushPhases(void);
 #endif
