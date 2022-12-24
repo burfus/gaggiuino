@@ -1,7 +1,6 @@
 #ifndef GAGGIUINO_H
 #define GAGGIUINO_H
 
-#include "profiling_phases.h"
 #include "log.h"
 #include "eeprom_data/eeprom_data.h"
 #include "lcd/lcd.h"
@@ -14,8 +13,10 @@
 #include "functional/descale.h"
 #include "functional/just_do_coffee.h"
 #include "functional/predictive_weight.h"
+#include "functional/profiling_phases.h"
 
 #include <Arduino.h>
+#include <IWatchdog.h>
 #include <SimpleKalmanFilter.h>
 
 // Define some const values
@@ -33,6 +34,7 @@
 #define TRAY_FULL_THRESHOLD     700.f
 #define HEALTHCHECK_EVERY       30000 // system checks happen every 30sec
 #define BOILER_FILL_TIMEOUT     8000UL
+#define BOILER_FILL_PRESSURE    1.f
 #define BREW_DETECT_DEBOUNCE    200
 
 
