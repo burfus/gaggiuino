@@ -34,7 +34,7 @@
 #define TRAY_FULL_THRESHOLD     700.f
 #define HEALTHCHECK_EVERY       45000 // system checks happen every 45sec
 #define BOILER_FILL_TIMEOUT     8000UL
-#define BOILER_FILL_PRESSURE    1.f
+#define BOILER_FILL_PRESSURE    0.8f
 #define BREW_DETECT_DEBOUNCE    200
 
 
