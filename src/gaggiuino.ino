@@ -1,7 +1,6 @@
 #if defined(DEBUG_ENABLED)
   #include "dbg.h"
 #endif
-
 #include "gaggiuino.h"
 
 SimpleKalmanFilter smoothPressure(2.f, 2.f, 0.5f);
@@ -74,9 +73,7 @@ void setup(void) {
   pageValuesRefresh(true);
   LOG_INFO("Setup sequence finished");
 
-  // IWDC init
-  IWatchdog.begin(3000000);
-  LOG_INFO("Internal watchdog Init");
+  iwdcInit();
 }
 
 //##############################################################################################################################
@@ -225,15 +222,20 @@ static void modeSelect(void) {
     case OPMODE_everythingFlowProfiled:
     case OPMODE_pressureBasedPreinfusionAndFlowProfile:
       nonBrewModeActive = false;
-      if (!steamState()) profiling();
-      else steamCtrl(runningCfg, currentState, brewActive);
+      if (!steamState()) {
+        profiling();
+        steamTime = millis();
+      }
+      else steamCtrl(runningCfg, currentState, brewActive, steamTime);
       break;
     case OPMODE_manual:
       nonBrewModeActive = false;
+      if (!steamState()) steamTime = millis();
       manualFlowControl();
       break;
     case OPMODE_flush:
       nonBrewModeActive = true;
+      if (!steamState()) steamTime = millis();
       backFlush(currentState);
       justDoCoffee(runningCfg, currentState, brewActive, preinfusionFinished);
       break;
@@ -242,12 +244,14 @@ static void modeSelect(void) {
       if (!steamState()) {
         brewActive ? flushActivated() : flushDeactivated();
         justDoCoffee(runningCfg, currentState, brewActive, preinfusionFinished);
+        steamTime = millis();
       } else {
-        steamCtrl(runningCfg, currentState, brewActive);
+        steamCtrl(runningCfg, currentState, brewActive, steamTime);
       }
       break;
     case OPMODE_descale:
       nonBrewModeActive = true;
+      if (!steamState()) steamTime = millis();
       deScale(runningCfg, currentState);
       break;
     case OPMODE_empty:
@@ -621,7 +625,7 @@ static void systemHealthCheck(float pressureThreshold) {
   #if defined LEGO_VALVE_RELAY || defined SINGLE_BOARD
   if ((!brewState() || stoppedOnWeight) && !steamState()) {
     if (millis() >= systemHealthTimer) {
-      while (currentState.smoothedPressure >= pressureThreshold && currentState.temperature < STEAM_WAND_HOT_WATER_TEMP)
+      while (currentState.smoothedPressure >= pressureThreshold && currentState.temperature < 100.f)
       {
         //Reloading the watchdog timer, if this function fails to run MCU is rebooted
         IWatchdog.reload();
@@ -648,9 +652,30 @@ static void systemHealthCheck(float pressureThreshold) {
     setBoilerOff();
     if (millis() > thermoTimer) {
       LOG_ERROR("Cannot read temp from thermocouple (last read: %.1lf)!", static_cast<double>(currentState.temperature));
-      lcdShowPopup("TEMP READ ERROR"); // writing a LCD message
+      steamState() ? lcdShowPopup("COOLDOWN") : lcdShowPopup("TEMP READ ERROR"); // writing a LCD message
       currentState.temperature  = thermocouple.readCelsius();  // Making sure we're getting a value
       thermoTimer = millis() + GET_KTYPE_READ_EVERY;
     }
   }
+
+  /*Shut down heaters if steam has been ON and unused fpr more than 10 minutes.*/
+  while (currentState.isSteamForgottenON) {
+    //Reloading the watchdog timer, if this function fails to run MCU is rebooted
+    IWatchdog.reload();
+    lcdShowPopup("TURN STEAM OFF NOW!");
+    setPumpOff();
+    setBoilerOff();
+    currentState.isSteamForgottenON = steamState();
+  }
+}
+
+/*Checking whether system is booting after a hard reset initiated by the internal watchdog.*/
+void iwdcInit(void) {
+  // IWDC init
+  if(IWatchdog.isReset()) {
+    lcdShowPopup("WATCHDOG RESTARTED");
+    IWatchdog.clearReset();
+  }
+  IWatchdog.begin(3000000);
+  LOG_INFO("Internal watchdog Init");
 }

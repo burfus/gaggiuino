@@ -86,15 +86,19 @@ void justDoCoffee(eepromValues_t &runningCfg, SensorState &currentState, bool br
 //################################____STEAM_POWER_CONTROL____##################################
 //#############################################################################################
 
-void steamCtrl(eepromValues_t &runningCfg, SensorState &currentState, bool brewActive) {
+void steamCtrl(eepromValues_t &runningCfg, SensorState &currentState, bool brewActive, unsigned long steamTime) {
   lcdTargetState(1); // setting the target mode to "steam temp"
-    // steam temp control, needs to be aggressive to keep steam pressure acceptable
-  if ((currentState.temperature > runningCfg.setpoint - 10.f) && (currentState.temperature <= STEAM_WAND_HOT_WATER_TEMP)) {
+  // steam temp control, needs to be aggressive to keep steam pressure acceptable
+  if (steamState() && brewState()) {
+    closeValve();
+    setPumpToRawValue(80);
     setBoilerOn();
-    brewActive ? setPumpFullOn() : setPumpOff();
-  }else if ((currentState.pressure <= 9.f) && (currentState.temperature > STEAM_WAND_HOT_WATER_TEMP) && (currentState.temperature <= runningCfg.steamSetPoint)) {
+  } else if ((currentState.smoothedPressure <= 9.f)
+  && (currentState.temperature > runningCfg.setpoint - 10.f)
+  && (currentState.temperature <= runningCfg.steamSetPoint))
+  {
     setBoilerOn();
-    if (currentState.pressure < 1.5f) {
+    if (currentState.smoothedPressure < 1.5f) {
       #if not defined (SINGLE_BOARD) // not ENABLED if using the PCB
         #if not defined (DREAM_STEAM_DISABLED) // disabled for bigger boilers which have no  need of adjusting the pressure
         openValve();
@@ -108,7 +112,13 @@ void steamCtrl(eepromValues_t &runningCfg, SensorState &currentState, bool brewA
   } else {
     setBoilerOff();
     #ifndef DREAM_STEAM_DISABLED
-      (currentState.pressure < 1.5f) ? setPumpToRawValue(5) : setPumpOff();
+      (currentState.smoothedPressure < 1.5f) ? setPumpToRawValue(5) : setPumpOff();
     #endif
   }
+
+  /*In case steam is forgotten ON for more than 15 min*/
+  if (currentState.smoothedPressure > 3.f) {
+    long steamTimeout = millis() - steamTime;
+    steamTimeout >= STEAM_TIMEOUT ? currentState.isSteamForgottenON = true : currentState.isSteamForgottenON = false;
+  } else steamTime = millis();
 }
