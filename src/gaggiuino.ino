@@ -3,9 +3,9 @@
 #endif
 #include "gaggiuino.h"
 
-SimpleKalmanFilter smoothPressure(2.f, 2.f, 0.5f);
-SimpleKalmanFilter smoothPumpFlow(2.f, 2.f, 0.5f);
-SimpleKalmanFilter smoothScalesFlow(2.f, 2.f, 0.5f);
+SimpleKalmanFilter smoothPressure(1.f, 1.f, 1.f);
+SimpleKalmanFilter smoothPumpFlow(0.5f, 0.3f, 0.1f);
+SimpleKalmanFilter smoothScalesFlow(0.5f, 0.5f, 0.2f);
 
 //default phases. Updated in updateProfilerPhases.
 Phase phaseArray[8];
@@ -129,7 +129,7 @@ static void sensorsReadPressure(void) {
     previousSmoothedPressure = currentState.smoothedPressure;
     currentState.pressure = getPressure();
     currentState.isPressureRising = isPressureRaising();
-    currentState.isPressureRisingFast = currentState.smoothedPressure >= previousSmoothedPressure + 0.06f;
+    currentState.isPressureRisingFast = currentState.smoothedPressure >= previousSmoothedPressure + 0.25f;
     currentState.isPressureFalling = isPressureFalling();
     currentState.isPressureFallingFast = isPressureFallingFast();
     currentState.smoothedPressure = smoothPressure.updateEstimate(currentState.pressure);
@@ -158,8 +158,8 @@ static void calculateWeightAndFlow(void) {
     if (elapsedTime > REFRESH_FLOW_EVERY) {
       flowTimer = millis();
       long pumpClicks = sensorsReadFlow(elapsedTime);
-      currentState.isPumpFlowRisingFast = currentState.smoothedPumpFlow > previousSmoothedPumpFlow + 0.15f;
-      currentState.isPumpFlowFallingFast = currentState.smoothedPumpFlow < previousSmoothedPumpFlow - 0.15f;
+      currentState.isPumpFlowRisingFast = currentState.smoothedPumpFlow > previousSmoothedPumpFlow + 0.45f;
+      currentState.isPumpFlowFallingFast = currentState.smoothedPumpFlow < previousSmoothedPumpFlow - 0.45f;
 
       bool previousIsOutputFlow = predictiveWeight.isOutputFlow();
 
@@ -539,11 +539,11 @@ static void manualFlowControl(void) {
     openValve();
     float flow_reading = lcdGetManualFlowVol() / 10 ;
     setPumpFlow(flow_reading, 0.f, currentState);
-    justDoCoffee(runningCfg, currentState, brewActive, preinfusionFinished);
   } else {
     closeValve();
     setPumpOff();
   }
+  justDoCoffee(runningCfg, currentState, brewActive, preinfusionFinished);
 }
 
 //#############################################################################################
