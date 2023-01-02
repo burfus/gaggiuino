@@ -106,13 +106,13 @@ void steamCtrl(eepromValues_t &runningCfg, SensorState &currentState, bool brewA
       #endif
 
       #ifndef DREAM_STEAM_DISABLED
-        setPumpToRawValue(10); //Increased pump RawValue from 5 for Ascaso Steel steam wand upgrade
+        setPumpToRawValue(12); //Increased pump RawValue from 5 for Ascaso Steel steam wand upgrade
       #endif
     } else setPumpOff();
   } else {
     setBoilerOff();
     #ifndef DREAM_STEAM_DISABLED
-      (currentState.smoothedPressure < 1.5f) ? setPumpToRawValue(10) : setPumpOff(); //Increased pump RawValue from 5 for Ascaso Steel steam wand upgrade
+      (currentState.smoothedPressure < 1.5f) ? setPumpToRawValue(12) : setPumpOff(); //Increased pump RawValue from 5 for Ascaso Steel steam wand upgrade
     #endif
   }
 
