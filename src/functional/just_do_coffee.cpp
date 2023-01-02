@@ -86,10 +86,10 @@ void justDoCoffee(eepromValues_t &runningCfg, SensorState &currentState, bool br
 //################################____STEAM_POWER_CONTROL____##################################
 //#############################################################################################
 
-void steamCtrl(eepromValues_t &runningCfg, SensorState &currentState, bool brewActive, unsigned long steamTime) {
+void steamCtrl(eepromValues_t &runningCfg, SensorState &currentState, bool brewActive, unsigned long steamTime, bool stoppedOnWeight) {
   lcdTargetState(1); // setting the target mode to "steam temp"
   // steam temp control, needs to be aggressive to keep steam pressure acceptable
-  if (steamState() && brewState()) {
+  if (steamState() && brewState() && !stoppedOnWeight) { //stoppedOnWeight needed to prevent entering hot water mode after brewing when steaming
     closeValve();
     setPumpToRawValue(80);
     setBoilerOn();
