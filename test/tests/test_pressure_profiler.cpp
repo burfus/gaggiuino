@@ -1,8 +1,7 @@
 #include <unity.h>
-#include "functional/profiling_phases.h"
-#include "sensors_state.h"
-#include "utils.h"
-
+#include <profiling_phases.h>
+#include <sensors_state.h>
+#include <utils.h>
 
 Phase pressurePhase(float start, float end, long time) {
   Phase phase = Phase{PHASE_TYPE_PRESSURE, Transition{start, end}, 0.f, PhaseStopConditions{}};
@@ -17,20 +16,18 @@ Phase presurePhaseWithWeightTarget(float start, float end, long time, float weig
   return phase;
 }
 
-Phase phaseArray[] = {
-    pressurePhase(0, 2, 1000),
-    pressurePhase(2, 2, 10000),
-    pressurePhase(2, 9, 1000),
-    pressurePhase(9, 9, 10000),
-    pressurePhase(9, 6, 30000),
-};
-
-Phases phases = {5, phaseArray};
-PhaseProfiler phaseProfiler = PhaseProfiler(phases);
 SensorState state;
 
 void test_current_phase_calculation(void)
 {
+    Profile profile;
+    profile.phases.push_back(pressurePhase(0, 2, 1000));
+    profile.phases.push_back(pressurePhase(2, 2, 10000));
+    profile.phases.push_back(pressurePhase(2, 9, 1000));
+    profile.phases.push_back(pressurePhase(9, 9, 10000));
+    profile.phases.push_back(pressurePhase(9, 6, 30000));
+
+    PhaseProfiler phaseProfiler = PhaseProfiler(profile);
     phaseProfiler.reset();
     phaseProfiler.updatePhase(0, state);
     TEST_ASSERT_EQUAL(0, phaseProfiler.getCurrentPhase().getIndex());
@@ -94,14 +91,13 @@ void test_get_pressure_for_phase_with_time_larger_than_duration(void)
 }
 
 void test_phases_with_zero_duration_are_skipped(void) {
-    Phase array[] = {
-      pressurePhase(2, 2, 0),
-      pressurePhase(2, 5, 0),
-      pressurePhase(2, 5, 0),
-      pressurePhase(5, 5, 1000)
-    };
-    Phases phases = Phases {4, array};
-    PhaseProfiler profiler = PhaseProfiler{phases};
+    Profile profile;
+    profile.addPhase(pressurePhase(2, 2, 0));
+    profile.addPhase(pressurePhase(2, 5, 0));
+    profile.addPhase(pressurePhase(2, 5, 0));
+    profile.addPhase(pressurePhase(5, 5, 1000));
+
+    PhaseProfiler profiler = PhaseProfiler(profile);
 
     profiler.updatePhase(0, state);
     TEST_ASSERT_EQUAL(3, profiler.getCurrentPhase().getIndex());
@@ -115,12 +111,11 @@ void test_phases_with_weight_stop_condition(void) {
   mockedState.weightFlow = 0.f;
 
   float weightTarget = 0.4f;
-  Phase array[] = {
-    presurePhaseWithWeightTarget(2, 2, -1, weightTarget),
-    pressurePhase(5, 5, 1000)
-  };
-  Phases phases = Phases {2, array};
-  PhaseProfiler profiler = PhaseProfiler{phases};
+  Profile profile;
+  profile.addPhase(presurePhaseWithWeightTarget(2, 2, -1, weightTarget));
+  profile.addPhase(pressurePhase(5, 5, 1000));
+
+  PhaseProfiler profiler = PhaseProfiler(profile);
 
   mockedState.shotWeight = 0.2f;
   profiler.updatePhase(3000, mockedState);
@@ -147,13 +142,13 @@ void test_phases_with_stop_conditions_and_skipped_phases() {
   mockedState.weightFlow = 0.f;
 
   float weightTarget = 0.4f;
-  Phase array[] = {
-    presurePhaseWithWeightTarget(2, 2, 30000, weightTarget),
-    pressurePhase(0, 0, 0), // should be skipped
-    pressurePhase(5, 5, 1000)
-  };
-  Phases phases = Phases {3, array};
-  PhaseProfiler profiler = PhaseProfiler{phases};
+
+  Profile profile;
+  profile.addPhase(presurePhaseWithWeightTarget(2, 2, 30000, weightTarget));
+  profile.addPhase(pressurePhase(0, 0, 0)); // should be skipped;
+  profile.addPhase(pressurePhase(5, 5, 1000));
+
+  PhaseProfiler profiler = PhaseProfiler{profile};
 
   mockedState.shotWeight = 0.5f;
   profiler.updatePhase(2000, mockedState);
@@ -163,24 +158,31 @@ void test_phases_with_stop_conditions_and_skipped_phases() {
 
 void test_phases_stay_constant() {
   // Check that the phases stay constant after updating and resetting
+  Profile profile;
+  profile.phases.push_back(pressurePhase(0, 2, 1000));
+  profile.phases.push_back(pressurePhase(2, 2, 10000));
+  profile.phases.push_back(pressurePhase(2, 9, 1000));
+  profile.phases.push_back(pressurePhase(9, 9, 10000));
+  profile.phases.push_back(pressurePhase(9, 6, 30000));
+  PhaseProfiler profiler(profile);
 
-  phaseProfiler.reset();
-  phaseProfiler.updatePhase(0, state);
-  phaseProfiler.updatePhase(550, state);
-  phaseProfiler.updatePhase(1000, state);
-  phaseProfiler.updatePhase(12500, state);
-  phaseProfiler.reset();
+  profiler.reset();
+  profiler.updatePhase(0, state);
+  profiler.updatePhase(550, state);
+  profiler.updatePhase(1000, state);
+  profiler.updatePhase(12500, state);
+  profiler.reset();
 
-  TEST_ASSERT_EQUAL(0, phaseProfiler.getCurrentPhase().getIndex());
-  TEST_ASSERT_EQUAL(0, phaseProfiler.getCurrentPhase().getTimeInPhase());
+  TEST_ASSERT_EQUAL(0, profiler.getCurrentPhase().getIndex());
+  TEST_ASSERT_EQUAL(0, profiler.getCurrentPhase().getTimeInPhase());
 
-  TEST_ASSERT_EQUAL(1000, phases.phases[0].stopConditions.time);
-  TEST_ASSERT_EQUAL(0, phases.phases[0].target.start);
-  TEST_ASSERT_EQUAL(2, phases.phases[0].target.end);
+  TEST_ASSERT_EQUAL(1000, profile.phases[0].stopConditions.time);
+  TEST_ASSERT_EQUAL(0, profile.phases[0].target.start);
+  TEST_ASSERT_EQUAL(2, profile.phases[0].target.end);
 
-  TEST_ASSERT_EQUAL(10000, phases.phases[1].stopConditions.time);
-  TEST_ASSERT_EQUAL(2, phases.phases[1].target.start);
-  TEST_ASSERT_EQUAL(2, phases.phases[1].target.end);
+  TEST_ASSERT_EQUAL(10000, profile.phases[1].stopConditions.time);
+  TEST_ASSERT_EQUAL(2, profile.phases[1].target.start);
+  TEST_ASSERT_EQUAL(2, profile.phases[1].target.end);
 }
 
 void runAllPressureProfilerTests() {

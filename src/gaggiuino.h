@@ -4,6 +4,7 @@
 #include "log.h"
 #include "eeprom_data/eeprom_data.h"
 #include "lcd/lcd.h"
+#include "peripherals/internal_watchdog.h"
 #include "peripherals/pump.h"
 #include "peripherals/pressure_sensor.h"
 #include "peripherals/scales.h"
@@ -13,10 +14,10 @@
 #include "functional/descale.h"
 #include "functional/just_do_coffee.h"
 #include "functional/predictive_weight.h"
-#include "functional/profiling_phases.h"
+#include "profiling_phases.h"
+#include "peripherals/esp_comms.h"
 
 #include <Arduino.h>
-#include <IWatchdog.h>
 #include <SimpleKalmanFilter.h>
 
 // Define some const values
@@ -34,7 +35,7 @@
 #define TRAY_FULL_THRESHOLD     700.f
 #define HEALTHCHECK_EVERY       45000 // system checks happen every 45sec
 #define BOILER_FILL_TIMEOUT     8000UL
-#define BOILER_FILL_PRESSURE    0.8f
+#define BOILER_FILL_PRESSURE    1.75f
 #define BREW_DETECT_DEBOUNCE    200
 
 
@@ -56,16 +57,15 @@ typedef enum {
 
 
 //Timers
-unsigned long pageRefreshTimer = 0;
-unsigned long pressureTimer = 0;
-unsigned long brewingTimer = 0;
-unsigned long thermoTimer = 0;
-unsigned long scalesTimer = 0;
-unsigned long flowTimer = 0;
-unsigned long steamTime = millis();
-unsigned long trayTimer = millis();
-unsigned long systemHealthTimer = 0;
-unsigned long brewDebounceTimer = 0;
+unsigned long systemHealthTimer;
+unsigned long pageRefreshTimer;
+unsigned long pressureTimer;
+unsigned long brewingTimer;
+unsigned long thermoTimer;
+unsigned long scalesTimer;
+unsigned long flowTimer;
+unsigned long steamTime;
+unsigned long brewDebounceTimer;
 
 //scales vars
 float previousWeight  = 0;

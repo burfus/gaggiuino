@@ -3,7 +3,7 @@
 
 #include "utils.h"
 #include "sensors_state.h"
-#include "../eeprom_data/eeprom_data.h"
+#include <vector>
 
 enum PHASE_TYPE {
   PHASE_TYPE_FLOW,
@@ -11,12 +11,17 @@ enum PHASE_TYPE {
 };
 
 struct ShotSnapshot {
-  long timeInShot;
+  uint32_t timeInShot;
   float pressure;
-  float flow;
+  float pumpFlow;
+  float weightFlow;
   float temperature;
   float shotWeight;
   float waterPumped;
+
+  float targetTemperature;
+  float targetPumpFlow;
+  float targetPressure;
 };
 
 struct PhaseStopConditions {
@@ -29,14 +34,6 @@ struct PhaseStopConditions {
   float waterPumpedInPhase = -1;
 
   bool isReached(SensorState& state, long timeInShot, ShotSnapshot stateAtPhaseStart) const;
-};
-
-struct GlobalStopConditions {
-  long time = -1;
-  float weight = -1;
-  float waterPumped = -1;
-
-  bool isReached(SensorState& state, long timeInShot);
 };
 
 struct Transition {
@@ -56,9 +53,34 @@ struct Phase {
   float restriction;
   PhaseStopConditions stopConditions;
 
-  float getTarget(unsigned long timeInPhase) const;
+  float getTarget(uint32_t timeInPhase) const;
   float getRestriction() const;
-  bool isStopConditionReached(SensorState& currentState, unsigned long timeInShot, ShotSnapshot stateAtPhaseStart) const;
+  bool isStopConditionReached(SensorState& currentState, uint32_t timeInShot, ShotSnapshot stateAtPhaseStart) const;
+};
+
+struct GlobalStopConditions {
+  long time = -1;
+  float weight = -1;
+  float waterPumped = -1;
+
+  bool isReached(SensorState& state, long timeInShot);
+};
+
+struct Profile {
+  std::vector<Phase> phases;
+  GlobalStopConditions globalStopConditions;
+
+  size_t phaseCount() {
+    return phases.size();
+  }
+
+  void addPhase(Phase phase) {
+    phases.push_back(phase);
+  }
+
+  void clear() {
+    phases.clear();
+  }
 };
 
 class CurrentPhase {
@@ -68,7 +90,7 @@ private:
   unsigned long timeInPhase;
 
 public:
-  CurrentPhase(int index, const Phase& phase, unsigned long timeInPhase);
+  CurrentPhase(int index, const Phase& phase, uint32_t timeInPhase);
   CurrentPhase(const CurrentPhase& currentPhase);
 
   Phase getPhase();
@@ -77,30 +99,27 @@ public:
   long getTimeInPhase();
   float getTarget();
   float getRestriction();
-  void update(int index, const Phase& phase, unsigned long timeInPhase);
-};
-
-struct Phases {
-  short count;
-  Phase* phases;
+  void update(int index, const Phase& phase, uint32_t timeInPhase);
 };
 
 class PhaseProfiler {
 private:
-  Phases& phases;
-  short currentPhaseIdx = 0; // The index at which the profiler currently is.
+  Profile& profile;
+  size_t currentPhaseIdx = 0; // The index at which the profiler currently is.
   ShotSnapshot phaseChangedSnapshot = ShotSnapshot{0, 0, 0, 0, 0, 0}; // State when the profiler move to this currentPhaseIdx
-  CurrentPhase currentPhase = CurrentPhase(0, phases.phases[0], 0);
-  GlobalStopConditions globalStopConditions;
+  CurrentPhase currentPhase = CurrentPhase(0, profile.phases[0], 0);
 
 public:
-  PhaseProfiler(Phases& phases);
+  PhaseProfiler(Profile& profile);
   // Gets the profiling phase we should be in based on the timeInShot and the Sensors state
-  void updatePhase(long timeInShot, SensorState& state);
+  void updatePhase(uint32_t timeInShot, SensorState& state);
   CurrentPhase& getCurrentPhase();
   bool isFinished();
   void reset();
-  void updateGlobalStopConditions(float weight, long time = -1, float waterVolume = -1);
 };
+
+// Helper functions
+
+ShotSnapshot buildShotSnapshot(uint32_t timeInShot, SensorState& state, CurrentPhase& phase);
 
 #endif
