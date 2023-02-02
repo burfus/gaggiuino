@@ -577,8 +577,7 @@ static void brewDetect(void) {
     if(paramsReset) {
       brewParamsReset();
       paramsReset = false;
-      if(scalesIsPresent) currentState.shotWeight = currentState.shotWeight + currentState.weightFlow / 2.f;
-      //else currentState.shotWeight = currentState.shotWeight + currentState.smoothedPumpFlow / 2.f;
+      if(scalesIsPresent) currentState.shotWeight = currentState.shotWeight + currentState.smoothedWeightFlow / 2.f;
     }
   }
 }
