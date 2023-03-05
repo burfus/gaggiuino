@@ -17,7 +17,7 @@ namespace {
     defaultData.offsetTemp = 7;
     defaultData.hpwr = 550;
     defaultData.mainDivider = 5;
-    defaultData.brewDivider = 2;
+    defaultData.brewDivider = 3;
     defaultData.pressureProfilingStart = 9;
     defaultData.pressureProfilingFinish = 6;
     defaultData.pressureProfilingHold = 5;
@@ -177,6 +177,21 @@ bool eepromWrite(eepromValues_t eepromValuesNew) {
   }
 
   if (eepromValuesNew.powerLineFrequency != 50 && eepromValuesNew.powerLineFrequency != 60) {
+    LOG_ERROR(errMsg);
+    return false;
+  }
+
+  if (eepromValuesNew.pumpFlowAtZero < 0.210f || eepromValuesNew.pumpFlowAtZero > 0.310f) {
+    LOG_ERROR(errMsg);
+    return false;
+  }
+
+  if (eepromValuesNew.scalesF1 < -20000.f || eepromValuesNew.scalesF1 > 20000.f) {
+    LOG_ERROR(errMsg);
+    return false;
+  }
+
+  if (eepromValuesNew.scalesF2 < -20000.f || eepromValuesNew.scalesF2 > 20000.f) {
     LOG_ERROR(errMsg);
     return false;
   }
