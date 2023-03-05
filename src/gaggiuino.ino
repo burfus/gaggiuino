@@ -583,7 +583,7 @@ static void brewDetect(void) {
   } else {
     brewActive = false;
 
-    if (!brewState()) {
+    if (!currentState.brewSwitchState) {
       stoppedOnWeight = false;
       brewDebounceTimer = millis() + BREW_DETECT_DEBOUNCE;
     }
