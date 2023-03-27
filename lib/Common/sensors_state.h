@@ -1,3 +1,4 @@
+/* 09:32 15/03/2023 - change triggering comment */
 #ifndef SENSORS_STATE_H
 #define SENSORS_STATE_H
 
@@ -11,6 +12,7 @@ struct SensorState {
   bool isPressureFallingFast;
   bool isPressureRising;
   bool isPressureRisingFast;
+  bool isPressureMaxed;
   bool isPumpFlowRisingFast;
   bool isPumpFlowFallingFast;
   bool isSteamForgottenON;
@@ -22,6 +24,9 @@ struct SensorState {
   float smoothedPressure;
   float smoothedPumpFlow;
   float smoothedWeightFlow;
+  float consideredFlow;
+  long pumpClicks;
+
 };
 
 struct SensorStateSnapshot {
